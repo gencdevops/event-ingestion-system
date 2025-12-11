@@ -1,0 +1,163 @@
+### Event Ingestion API - Metrics Endpoints
+### Use with IntelliJ HTTP Client or VS Code REST Client
+
+@host = http://localhost:8080
+
+###############################################
+# Basic Metrics Queries
+###############################################
+
+### Get Metrics - Product View (Required params only)
+GET {{host}}/api/v1/metrics?event_name=product_view&from=1533833200&to=1733919600
+Content-Type: application/json
+
+### Get Metrics - Add to Cart
+GET {{host}}/api/v1/metrics?event_name=add_to_cart&from=1733833200&to=1733919600
+Content-Type: application/json
+
+### Get Metrics - Purchase
+GET {{host}}/api/v1/metrics?event_name=purchase&from=1733833200&to=1733919600
+Content-Type: application/json
+
+### Get Metrics - Signup
+GET {{host}}/api/v1/metrics?event_name=signup&from=1733833200&to=1733919600
+Content-Type: application/json
+
+### Get Metrics - Page View
+GET {{host}}/api/v1/metrics?event_name=page_view&from=1733833200&to=1733919600
+Content-Type: application/json
+
+###############################################
+# Channel Filtered Queries
+###############################################
+
+### Get Metrics - Web Channel Only
+GET {{host}}/api/v1/metrics?event_name=product_view&from=1733833200&to=1733919600&channel=web
+Content-Type: application/json
+
+### Get Metrics - Mobile App Channel Only
+GET {{host}}/api/v1/metrics?event_name=product_view&from=1733833200&to=1733919600&channel=mobile_app
+Content-Type: application/json
+
+### Get Metrics - API Channel Only
+GET {{host}}/api/v1/metrics?event_name=product_view&from=1733833200&to=1733919600&channel=api
+Content-Type: application/json
+
+### Get Metrics - Purchase on Web
+GET {{host}}/api/v1/metrics?event_name=purchase&from=1733833200&to=1733919600&channel=web
+Content-Type: application/json
+
+### Get Metrics - Signup on Mobile App
+GET {{host}}/api/v1/metrics?event_name=signup&from=1733660400&to=1733919600&channel=mobile_app
+Content-Type: application/json
+
+###############################################
+# Grouped Metrics - By Channel
+###############################################
+
+### Get Metrics - Product View Grouped by Channel
+GET {{host}}/api/v1/metrics?event_name=product_view&from=1733833200&to=1733919600&group_by=channel
+Content-Type: application/json
+
+### Get Metrics - Add to Cart Grouped by Channel
+GET {{host}}/api/v1/metrics?event_name=add_to_cart&from=1733833200&to=1733919600&group_by=channel
+Content-Type: application/json
+
+### Get Metrics - Purchase Grouped by Channel
+GET {{host}}/api/v1/metrics?event_name=purchase&from=1733833200&to=1733919600&group_by=channel
+Content-Type: application/json
+
+###############################################
+# Grouped Metrics - By Hour
+###############################################
+
+### Get Metrics - Product View Grouped by Hour
+GET {{host}}/api/v1/metrics?event_name=product_view&from=1733833200&to=1733919600&group_by=hour
+Content-Type: application/json
+
+### Get Metrics - Add to Cart Grouped by Hour
+GET {{host}}/api/v1/metrics?event_name=add_to_cart&from=1733833200&to=1733919600&group_by=hour
+Content-Type: application/json
+
+### Get Metrics - Purchase Grouped by Hour (Last 24 hours)
+GET {{host}}/api/v1/metrics?event_name=purchase&from=1733833200&to=1733919600&group_by=hour
+Content-Type: application/json
+
+###############################################
+# Grouped Metrics - By Day
+###############################################
+
+### Get Metrics - Product View Grouped by Day (Last 7 days)
+GET {{host}}/api/v1/metrics?event_name=product_view&from=1733314800&to=1733919600&group_by=day
+Content-Type: application/json
+
+### Get Metrics - Purchase Grouped by Day (Last 7 days)
+GET {{host}}/api/v1/metrics?event_name=purchase&from=1733314800&to=1733919600&group_by=day
+Content-Type: application/json
+
+### Get Metrics - Signup Grouped by Day (Last 30 days)
+GET {{host}}/api/v1/metrics?event_name=signup&from=1731327600&to=1733919600&group_by=day
+Content-Type: application/json
+
+###############################################
+# Combined Filters (Channel + Group By)
+###############################################
+
+### Get Metrics - Web Channel Grouped by Hour
+GET {{host}}/api/v1/metrics?event_name=product_view&from=1733833200&to=1733919600&channel=web&group_by=hour
+Content-Type: application/json
+
+### Get Metrics - Mobile App Channel Grouped by Day
+GET {{host}}/api/v1/metrics?event_name=purchase&from=1733314800&to=1733919600&channel=mobile_app&group_by=day
+Content-Type: application/json
+
+### Get Metrics - API Channel Grouped by Hour
+GET {{host}}/api/v1/metrics?event_name=add_to_cart&from=1733833200&to=1733919600&channel=api&group_by=hour
+Content-Type: application/json
+
+###############################################
+# Wide Time Range Queries
+###############################################
+
+### Get Metrics - Last 24 Hours
+# from: now - 24h, to: now
+GET {{host}}/api/v1/metrics?event_name=product_view&from=1733833200&to=1733919600&group_by=hour
+Content-Type: application/json
+
+### Get Metrics - Last 7 Days
+# from: now - 7d, to: now
+GET {{host}}/api/v1/metrics?event_name=product_view&from=1733314800&to=1733919600&group_by=day
+Content-Type: application/json
+
+### Get Metrics - Last 30 Days
+# from: now - 30d, to: now
+GET {{host}}/api/v1/metrics?event_name=purchase&from=1731327600&to=1733919600&group_by=day
+Content-Type: application/json
+
+###############################################
+# Error Cases
+###############################################
+
+### Error - Missing event_name
+GET {{host}}/api/v1/metrics?from=1733833200&to=1733919600
+Content-Type: application/json
+
+### Error - Missing from timestamp
+GET {{host}}/api/v1/metrics?event_name=product_view&to=1733919600
+Content-Type: application/json
+
+### Error - Missing to timestamp
+GET {{host}}/api/v1/metrics?event_name=product_view&from=1733833200
+Content-Type: application/json
+
+### Error - Invalid time range (to <= from)
+GET {{host}}/api/v1/metrics?event_name=product_view&from=1733919600&to=1733833200
+Content-Type: application/json
+
+### Error - Invalid channel value
+GET {{host}}/api/v1/metrics?event_name=product_view&from=1733833200&to=1733919600&channel=invalid_channel
+Content-Type: application/json
+
+### Error - Invalid group_by value
+GET {{host}}/api/v1/metrics?event_name=product_view&from=1733833200&to=1733919600&group_by=invalid_group
+Content-Type: application/json

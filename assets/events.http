@@ -1,0 +1,298 @@
+### Event Ingestion API - Events Endpoints
+### Use with IntelliJ HTTP Client or VS Code REST Client
+
+@host = http://localhost:8080
+
+###############################################
+# Health Check
+###############################################
+
+### Health Check
+GET {{host}}/health
+Content-Type: application/json
+
+###############################################
+# Single Event Ingestion
+###############################################
+
+### Ingest Single Event - Product View
+POST {{host}}/api/v1/events
+Content-Type: application/json
+
+{
+  "event_name": "product_view",
+  "channel": "web",
+  "campaign_id": "summer_sale_2024",
+  "user_id": "user_12345",
+  "timestamp": 1733920800,
+  "tags": ["electronics", "mobile", "featured"],
+  "metadata": {
+    "product_id": "prod_001",
+    "price": 2999.99,
+    "currency": "TRY",
+    "category": "smartphones"
+  }
+}
+
+### Ingest Single Event - Add to Cart
+POST {{host}}/api/v1/events
+Content-Type: application/json
+
+{
+  "event_name": "add_to_cart",
+  "channel": "mobile_app",
+  "campaign_id": "black_friday_2024",
+  "user_id": "user_67890",
+  "timestamp": 1733920900,
+  "tags": ["conversion", "high_value"],
+  "metadata": {
+    "product_id": "prod_002",
+    "quantity": 2,
+    "price": 1499.00,
+    "currency": "TRY"
+  }
+}
+
+### Ingest Single Event - Purchase
+POST {{host}}/api/v1/events
+Content-Type: application/json
+
+{
+  "event_name": "purchase",
+  "channel": "api",
+  "campaign_id": "loyalty_program",
+  "user_id": "user_11111",
+  "timestamp": 1733921000,
+  "tags": ["completed", "paid"],
+  "metadata": {
+    "order_id": "order_98765",
+    "total_amount": 5999.99,
+    "currency": "TRY",
+    "payment_method": "credit_card",
+    "items_count": 3
+  }
+}
+
+### Ingest Single Event - Signup
+POST {{host}}/api/v1/events
+Content-Type: application/json
+
+{
+  "event_name": "signup",
+  "channel": "mobile_app",
+  "campaign_id": "referral_program",
+  "user_id": "user_new_001",
+  "timestamp": 1733921100,
+  "tags": ["new_user", "organic"],
+  "metadata": {
+    "platform": "ios",
+    "app_version": "2.5.0",
+    "device": "iPhone 15"
+  }
+}
+
+### Ingest Single Event - Page View
+POST {{host}}/api/v1/events
+Content-Type: application/json
+
+{
+  "event_name": "page_view",
+  "channel": "web",
+  "campaign_id": "seo",
+  "user_id": "user_anonymous_001",
+  "timestamp": 1733921200,
+  "tags": ["homepage", "landing"],
+  "metadata": {
+    "page": "/",
+    "referrer": "google.com",
+    "utm_source": "google",
+    "utm_medium": "organic"
+  }
+}
+
+###############################################
+# Bulk Event Ingestion
+###############################################
+
+### Ingest Bulk Events - User Journey (5 events)
+POST {{host}}/api/v1/events/bulk
+Content-Type: application/json
+
+{
+  "events": [
+    {
+      "event_name": "page_view",
+      "channel": "web",
+      "campaign_id": "organic",
+      "user_id": "user_001",
+      "timestamp": 1733920000,
+      "tags": ["homepage"],
+      "metadata": {"page": "/", "referrer": "google.com"}
+    },
+    {
+      "event_name": "product_view",
+      "channel": "web",
+      "campaign_id": "organic",
+      "user_id": "user_001",
+      "timestamp": 1733920100,
+      "tags": ["electronics"],
+      "metadata": {"product_id": "prod_100", "price": 999.99}
+    },
+    {
+      "event_name": "add_to_cart",
+      "channel": "web",
+      "campaign_id": "organic",
+      "user_id": "user_001",
+      "timestamp": 1733920200,
+      "tags": ["conversion"],
+      "metadata": {"product_id": "prod_100", "quantity": 1}
+    },
+    {
+      "event_name": "purchase",
+      "channel": "web",
+      "campaign_id": "organic",
+      "user_id": "user_001",
+      "timestamp": 1733920300,
+      "tags": ["completed"],
+      "metadata": {"order_id": "ord_001", "total": 999.99}
+    },
+    {
+      "event_name": "signup",
+      "channel": "mobile_app",
+      "campaign_id": "referral_program",
+      "user_id": "user_002",
+      "timestamp": 1733920400,
+      "tags": ["new_user", "referral"],
+      "metadata": {"referrer_id": "user_001", "platform": "ios"}
+    }
+  ]
+}
+
+### Ingest Bulk Events - Multi-Channel (10 events)
+POST {{host}}/api/v1/events/bulk
+Content-Type: application/json
+
+{
+  "events": [
+    {"event_name": "product_view", "channel": "web", "campaign_id": "cmp_1", "user_id": "u1", "timestamp": 1733920000, "tags": ["test"], "metadata": {"i": 1}},
+    {"event_name": "product_view", "channel": "web", "campaign_id": "cmp_1", "user_id": "u2", "timestamp": 1733920001, "tags": ["test"], "metadata": {"i": 2}},
+    {"event_name": "product_view", "channel": "mobile_app", "campaign_id": "cmp_1", "user_id": "u3", "timestamp": 1733920002, "tags": ["test"], "metadata": {"i": 3}},
+    {"event_name": "add_to_cart", "channel": "web", "campaign_id": "cmp_1", "user_id": "u1", "timestamp": 1733920003, "tags": ["test"], "metadata": {"i": 4}},
+    {"event_name": "add_to_cart", "channel": "mobile_app", "campaign_id": "cmp_1", "user_id": "u2", "timestamp": 1733920004, "tags": ["test"], "metadata": {"i": 5}},
+    {"event_name": "purchase", "channel": "web", "campaign_id": "cmp_1", "user_id": "u1", "timestamp": 1733920005, "tags": ["test"], "metadata": {"i": 6}},
+    {"event_name": "purchase", "channel": "api", "campaign_id": "cmp_1", "user_id": "u3", "timestamp": 1733920006, "tags": ["test"], "metadata": {"i": 7}},
+    {"event_name": "page_view", "channel": "web", "campaign_id": "cmp_2", "user_id": "u4", "timestamp": 1733920007, "tags": ["test"], "metadata": {"i": 8}},
+    {"event_name": "signup", "channel": "mobile_app", "campaign_id": "cmp_2", "user_id": "u5", "timestamp": 1733920008, "tags": ["test"], "metadata": {"i": 9}},
+    {"event_name": "product_view", "channel": "api", "campaign_id": "cmp_2", "user_id": "u6", "timestamp": 1733920009, "tags": ["test"], "metadata": {"i": 10}}
+  ]
+}
+
+### Ingest Bulk Events - E-commerce Campaign (8 events)
+POST {{host}}/api/v1/events/bulk
+Content-Type: application/json
+
+{
+  "events": [
+    {
+      "event_name": "product_view",
+      "channel": "web",
+      "campaign_id": "black_friday",
+      "user_id": "customer_100",
+      "timestamp": 1733920000,
+      "tags": ["promo", "electronics"],
+      "metadata": {"product_id": "laptop_001", "price": 15999.00, "discount": 20}
+    },
+    {
+      "event_name": "product_view",
+      "channel": "web",
+      "campaign_id": "black_friday",
+      "user_id": "customer_100",
+      "timestamp": 1733920060,
+      "tags": ["promo", "electronics"],
+      "metadata": {"product_id": "mouse_001", "price": 299.00, "discount": 15}
+    },
+    {
+      "event_name": "add_to_cart",
+      "channel": "web",
+      "campaign_id": "black_friday",
+      "user_id": "customer_100",
+      "timestamp": 1733920120,
+      "tags": ["promo"],
+      "metadata": {"product_id": "laptop_001", "quantity": 1}
+    },
+    {
+      "event_name": "add_to_cart",
+      "channel": "web",
+      "campaign_id": "black_friday",
+      "user_id": "customer_100",
+      "timestamp": 1733920180,
+      "tags": ["promo"],
+      "metadata": {"product_id": "mouse_001", "quantity": 1}
+    },
+    {
+      "event_name": "purchase",
+      "channel": "web",
+      "campaign_id": "black_friday",
+      "user_id": "customer_100",
+      "timestamp": 1733920240,
+      "tags": ["promo", "completed"],
+      "metadata": {"order_id": "BF_001", "total": 13053.15, "items": 2}
+    },
+    {
+      "event_name": "product_view",
+      "channel": "mobile_app",
+      "campaign_id": "black_friday",
+      "user_id": "customer_200",
+      "timestamp": 1733920300,
+      "tags": ["promo", "fashion"],
+      "metadata": {"product_id": "jacket_001", "price": 1299.00}
+    },
+    {
+      "event_name": "add_to_cart",
+      "channel": "mobile_app",
+      "campaign_id": "black_friday",
+      "user_id": "customer_200",
+      "timestamp": 1733920360,
+      "tags": ["promo"],
+      "metadata": {"product_id": "jacket_001", "quantity": 2}
+    },
+    {
+      "event_name": "purchase",
+      "channel": "mobile_app",
+      "campaign_id": "black_friday",
+      "user_id": "customer_200",
+      "timestamp": 1733920420,
+      "tags": ["promo", "completed"],
+      "metadata": {"order_id": "BF_002", "total": 2208.30, "items": 2}
+    }
+  ]
+}
+
+###############################################
+# Error Cases
+###############################################
+
+### Error - Empty bulk events
+POST {{host}}/api/v1/events/bulk
+Content-Type: application/json
+
+{
+  "events": []
+}
+
+### Error - Too many events (over 1000)
+# Note: This would need 1001+ events to trigger
+
+### Error - Invalid JSON
+POST {{host}}/api/v1/events
+Content-Type: application/json
+
+{invalid json}
+
+### Error - Missing required fields
+POST {{host}}/api/v1/events
+Content-Type: application/json
+
+{
+  "channel": "web"
+}

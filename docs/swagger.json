@@ -1,0 +1,346 @@
+{
+    "schemes": [
+        "http",
+        "https"
+    ],
+    "swagger": "2.0",
+    "info": {
+        "description": "High-performance event ingestion service with Kafka and ClickHouse",
+        "title": "Event Ingestion API",
+        "termsOfService": "http://swagger.io/terms/",
+        "contact": {
+            "name": "API Support",
+            "email": "support@example.com"
+        },
+        "license": {
+            "name": "Apache 2.0",
+            "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+        },
+        "version": "1.0"
+    },
+    "host": "localhost:8080",
+    "basePath": "/",
+    "paths": {
+        "/api/v1/events": {
+            "post": {
+                "description": "Ingest a single event into the system for processing",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Events"
+                ],
+                "summary": "Ingest single event",
+                "parameters": [
+                    {
+                        "description": "Event data",
+                        "name": "event",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/event.IngestEventCommand"
+                        }
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Event accepted for processing",
+                        "schema": {
+                            "$ref": "#/definitions/dto.EventResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/events/bulk": {
+            "post": {
+                "description": "Ingest multiple events (up to 1000) in a single request",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Events"
+                ],
+                "summary": "Ingest bulk events",
+                "parameters": [
+                    {
+                        "description": "Bulk events data",
+                        "name": "events",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/event.IngestBulkCommand"
+                        }
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "All events accepted",
+                        "schema": {
+                            "$ref": "#/definitions/dto.BulkEventResponse"
+                        }
+                    },
+                    "207": {
+                        "description": "Partial success",
+                        "schema": {
+                            "$ref": "#/definitions/dto.BulkEventResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/metrics": {
+            "get": {
+                "description": "Retrieve aggregated metrics for events within a time range",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Metrics"
+                ],
+                "summary": "Get event metrics",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Event name to filter by",
+                        "name": "event_name",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Start timestamp (Unix)",
+                        "name": "from",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "End timestamp (Unix)",
+                        "name": "to",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Channel filter (web, mobile_app, api)",
+                        "name": "channel",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Group results by (channel, hour, day)",
+                        "name": "group_by",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Metrics data",
+                        "schema": {
+                            "$ref": "#/definitions/dto.MetricsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/health": {
+            "get": {
+                "description": "Returns the health status of the service",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Health"
+                ],
+                "summary": "Health check",
+                "responses": {
+                    "200": {
+                        "description": "Service is healthy",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "dto.BulkEventItemError": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string"
+                },
+                "index": {
+                    "type": "integer"
+                }
+            }
+        },
+        "dto.BulkEventResponse": {
+            "type": "object",
+            "properties": {
+                "errors": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.BulkEventItemError"
+                    }
+                },
+                "failed_count": {
+                    "type": "integer"
+                },
+                "success_count": {
+                    "type": "integer"
+                }
+            }
+        },
+        "dto.ErrorResponse": {
+            "type": "object",
+            "properties": {
+                "details": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "error": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.EventResponse": {
+            "type": "object",
+            "properties": {
+                "event_id": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.GroupedData": {
+            "type": "object",
+            "properties": {
+                "key": {
+                    "type": "string"
+                },
+                "total_count": {
+                    "type": "integer"
+                },
+                "unique_users": {
+                    "type": "integer"
+                }
+            }
+        },
+        "dto.MetricsResponse": {
+            "type": "object",
+            "properties": {
+                "grouped_data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.GroupedData"
+                    }
+                },
+                "total_count": {
+                    "type": "integer"
+                },
+                "unique_users": {
+                    "type": "integer"
+                }
+            }
+        },
+        "event.IngestBulkCommand": {
+            "type": "object",
+            "properties": {
+                "events": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/event.IngestEventCommand"
+                    }
+                }
+            }
+        },
+        "event.IngestEventCommand": {
+            "type": "object",
+            "properties": {
+                "campaign_id": {
+                    "type": "string"
+                },
+                "channel": {
+                    "type": "string"
+                },
+                "event_name": {
+                    "type": "string"
+                },
+                "metadata": {
+                    "type": "object",
+                    "additionalProperties": {}
+                },
+                "tags": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "timestamp": {
+                    "type": "integer"
+                },
+                "user_id": {
+                    "type": "string"
+                }
+            }
+        }
+    }
+}

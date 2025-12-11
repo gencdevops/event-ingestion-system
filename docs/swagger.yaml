@@ -1,0 +1,228 @@
+basePath: /
+definitions:
+  dto.BulkEventItemError:
+    properties:
+      error:
+        type: string
+      index:
+        type: integer
+    type: object
+  dto.BulkEventResponse:
+    properties:
+      errors:
+        items:
+          $ref: '#/definitions/dto.BulkEventItemError'
+        type: array
+      failed_count:
+        type: integer
+      success_count:
+        type: integer
+    type: object
+  dto.ErrorResponse:
+    properties:
+      details:
+        additionalProperties:
+          type: string
+        type: object
+      error:
+        type: string
+    type: object
+  dto.EventResponse:
+    properties:
+      event_id:
+        type: string
+      status:
+        type: string
+    type: object
+  dto.GroupedData:
+    properties:
+      key:
+        type: string
+      total_count:
+        type: integer
+      unique_users:
+        type: integer
+    type: object
+  dto.MetricsResponse:
+    properties:
+      grouped_data:
+        items:
+          $ref: '#/definitions/dto.GroupedData'
+        type: array
+      total_count:
+        type: integer
+      unique_users:
+        type: integer
+    type: object
+  event.IngestBulkCommand:
+    properties:
+      events:
+        items:
+          $ref: '#/definitions/event.IngestEventCommand'
+        type: array
+    type: object
+  event.IngestEventCommand:
+    properties:
+      campaign_id:
+        type: string
+      channel:
+        type: string
+      event_name:
+        type: string
+      metadata:
+        additionalProperties: {}
+        type: object
+      tags:
+        items:
+          type: string
+        type: array
+      timestamp:
+        type: integer
+      user_id:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: support@example.com
+    name: API Support
+  description: High-performance event ingestion service with Kafka and ClickHouse
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: Event Ingestion API
+  version: "1.0"
+paths:
+  /api/v1/events:
+    post:
+      consumes:
+      - application/json
+      description: Ingest a single event into the system for processing
+      parameters:
+      - description: Event data
+        in: body
+        name: event
+        required: true
+        schema:
+          $ref: '#/definitions/event.IngestEventCommand'
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Event accepted for processing
+          schema:
+            $ref: '#/definitions/dto.EventResponse'
+        "400":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Ingest single event
+      tags:
+      - Events
+  /api/v1/events/bulk:
+    post:
+      consumes:
+      - application/json
+      description: Ingest multiple events (up to 1000) in a single request
+      parameters:
+      - description: Bulk events data
+        in: body
+        name: events
+        required: true
+        schema:
+          $ref: '#/definitions/event.IngestBulkCommand'
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: All events accepted
+          schema:
+            $ref: '#/definitions/dto.BulkEventResponse'
+        "207":
+          description: Partial success
+          schema:
+            $ref: '#/definitions/dto.BulkEventResponse'
+        "400":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Ingest bulk events
+      tags:
+      - Events
+  /api/v1/metrics:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve aggregated metrics for events within a time range
+      parameters:
+      - description: Event name to filter by
+        in: query
+        name: event_name
+        required: true
+        type: string
+      - description: Start timestamp (Unix)
+        in: query
+        name: from
+        required: true
+        type: integer
+      - description: End timestamp (Unix)
+        in: query
+        name: to
+        required: true
+        type: integer
+      - description: Channel filter (web, mobile_app, api)
+        in: query
+        name: channel
+        type: string
+      - description: Group results by (channel, hour, day)
+        in: query
+        name: group_by
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Metrics data
+          schema:
+            $ref: '#/definitions/dto.MetricsResponse'
+        "400":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Get event metrics
+      tags:
+      - Metrics
+  /health:
+    get:
+      consumes:
+      - application/json
+      description: Returns the health status of the service
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Service is healthy
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Health check
+      tags:
+      - Health
+schemes:
+- http
+- https
+swagger: "2.0"
