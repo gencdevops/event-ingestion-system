@@ -3,11 +3,20 @@ package clickhouse
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"strings"
 	"time"
 
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
 	"github.com/event-ingestion/domain/event"
+)
+
+const (
+	maxBatchSize = 500000
+
+	groupByChannel = "channel"
+	groupByHour    = "hour"
+	groupByDay     = "day"
 )
 
 type EventRepository struct {
@@ -24,6 +33,20 @@ func (r *EventRepository) InsertBatch(ctx context.Context, events []*event.Event
 		return nil
 	}
 
+	for start := 0; start < len(events); start += maxBatchSize {
+		end := start + maxBatchSize
+		if end > len(events) {
+			end = len(events)
+		}
+
+		if err := r.insertChunk(ctx, events[start:end]); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (r *EventRepository) insertChunk(ctx context.Context, events []*event.Event) error {
 	batch, err := r.conn.PrepareBatch(ctx, fmt.Sprintf(`
 		INSERT INTO %s.events (
 			event_id, event_name, channel, campaign_id, user_id,
@@ -31,6 +54,7 @@ func (r *EventRepository) InsertBatch(ctx context.Context, events []*event.Event
 		)
 	`, r.database))
 	if err != nil {
+		slog.Error("Failed to prepare ClickHouse batch", "error", err)
 		return fmt.Errorf("failed to prepare batch: %w", err)
 	}
 
@@ -47,14 +71,17 @@ func (r *EventRepository) InsertBatch(ctx context.Context, events []*event.Event
 			time.Now(),
 		)
 		if err != nil {
+			slog.Error("Failed to append event to batch", "eventID", e.EventID, "error", err)
 			return fmt.Errorf("failed to append to batch: %w", err)
 		}
 	}
 
 	if err := batch.Send(); err != nil {
+		slog.Error("Failed to send batch to ClickHouse", "batchSize", len(events), "error", err)
 		return fmt.Errorf("failed to send batch: %w", err)
 	}
 
+	slog.Info("Batch inserted to ClickHouse", "count", len(events))
 	return nil
 }
 
@@ -92,6 +119,7 @@ func (r *EventRepository) GetMetrics(ctx context.Context, query *event.GetMetric
 
 	row := r.conn.QueryRow(ctx, baseQuery, args...)
 	if err := row.Scan(&totalCount, &uniqueUsers); err != nil {
+		slog.Error("Failed to query metrics from ClickHouse", "eventName", query.EventName, "error", err)
 		return nil, fmt.Errorf("failed to get metrics: %w", err)
 	}
 
@@ -108,6 +136,7 @@ func (r *EventRepository) GetMetrics(ctx context.Context, query *event.GetMetric
 		result.GroupedData = groupedData
 	}
 
+	slog.Info("Metrics queried from ClickHouse", "eventName", query.EventName, "totalCount", totalCount, "uniqueUsers", uniqueUsers)
 	return result, nil
 }
 
@@ -116,13 +145,13 @@ func (r *EventRepository) getGroupedMetrics(ctx context.Context, query *event.Ge
 	var keyFormat string
 
 	switch query.GroupBy {
-	case "channel":
+	case groupByChannel:
 		groupByColumn = "channel"
 		keyFormat = "channel"
-	case "hour":
+	case groupByHour:
 		groupByColumn = "hour"
 		keyFormat = "toString(hour)"
-	case "day":
+	case groupByDay:
 		groupByColumn = "toStartOfDay(hour)"
 		keyFormat = "toString(toStartOfDay(hour))"
 	default:
@@ -142,6 +171,7 @@ func (r *EventRepository) getGroupedMetrics(ctx context.Context, query *event.Ge
 
 	rows, err := r.conn.Query(ctx, groupQuery, args...)
 	if err != nil {
+		slog.Error("Failed to query grouped metrics from ClickHouse", "eventName", query.EventName, "groupBy", query.GroupBy, "error", err)
 		return nil, fmt.Errorf("failed to get grouped metrics: %w", err)
 	}
 	defer rows.Close()
@@ -156,6 +186,10 @@ func (r *EventRepository) getGroupedMetrics(ctx context.Context, query *event.Ge
 		data.TotalCount = int64(totalCount)
 		data.UniqueUsers = int64(uniqueUsers)
 		result = append(result, data)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating rows: %w", err)
 	}
 
 	return result, nil

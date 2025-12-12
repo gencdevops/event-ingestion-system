@@ -9,6 +9,16 @@ help:
 	@echo "  make test   - Run tests"
 
 run:
+	@echo "Checking Docker Engine..."
+	@if ! docker info >/dev/null 2>&1; then \
+		echo "Docker Engine is not running. Starting Docker..."; \
+		open -a Docker; \
+		echo "Waiting for Docker to start..."; \
+		while ! docker info >/dev/null 2>&1; do \
+			sleep 2; \
+		done; \
+		echo "Docker Engine started."; \
+	fi
 	@echo "Checking port 8080..."
 	@lsof -ti:8080 | xargs kill -9 2>/dev/null || true
 	@echo "Starting infrastructure..."

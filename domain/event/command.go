@@ -29,6 +29,26 @@ type IngestBulkCommand struct {
 	Events []IngestEventCommand `json:"events"`
 }
 
+const MaxBulkEvents = 1000
+
+func (cmd *IngestBulkCommand) Validate() *ErrorDetail {
+	if len(cmd.Events) == 0 {
+		return &ErrorDetail{
+			Field:   "events",
+			Code:    ErrCodeValidationRequired,
+			Message: "events array cannot be empty",
+		}
+	}
+	if len(cmd.Events) > MaxBulkEvents {
+		return &ErrorDetail{
+			Field:   "events",
+			Code:    ErrCodeValidationMaxLength,
+			Message: "events array cannot exceed 1000 items",
+		}
+	}
+	return nil
+}
+
 func (cmd *IngestBulkCommand) ToEvents() []*Event {
 	events := make([]*Event, 0, len(cmd.Events))
 	for _, e := range cmd.Events {

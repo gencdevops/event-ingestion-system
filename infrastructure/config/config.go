@@ -28,6 +28,11 @@ type KafkaConfig struct {
 	ReplicationFactor int      `env:"KAFKA_REPLICATION_FACTOR" envDefault:"2"`
 }
 
+type TopicConfig struct {
+	Name       string
+	Partitions int
+}
+
 type ClickHouseConfig struct {
 	Host     string `env:"CLICKHOUSE_HOST" envDefault:"localhost"`
 	Port     int    `env:"CLICKHOUSE_PORT" envDefault:"9000"`

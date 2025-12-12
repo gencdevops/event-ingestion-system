@@ -2,6 +2,7 @@ package application
 
 import (
 	"context"
+	"log/slog"
 
 	"github.com/event-ingestion/application/dto"
 	"github.com/event-ingestion/domain/event"
@@ -24,6 +25,7 @@ func NewMetricsService(repository event.EventRepository) MetricsService {
 func (s *metricsService) GetMetrics(ctx context.Context, query *event.GetMetricsQuery) (*dto.MetricsResponse, error) {
 	result, err := s.repository.GetMetrics(ctx, query)
 	if err != nil {
+		slog.Error("Failed to fetch metrics from repository", "eventName", query.EventName, "from", query.From, "to", query.To, "error", err)
 		return nil, err
 	}
 
@@ -43,5 +45,6 @@ func (s *metricsService) GetMetrics(ctx context.Context, query *event.GetMetrics
 		}
 	}
 
+	slog.Info("Metrics fetched", "eventName", query.EventName, "totalCount", result.TotalCount, "uniqueUsers", result.UniqueUsers, "groupedCount", len(result.GroupedData))
 	return response, nil
 }

@@ -1,20 +1,3 @@
-### Event Ingestion API - Events Endpoints
-### Use with IntelliJ HTTP Client or VS Code REST Client
-
-@host = http://localhost:8080
-
-###############################################
-# Health Check
-###############################################
-
-### Health Check
-GET {{host}}/health
-Content-Type: application/json
-
-###############################################
-# Single Event Ingestion
-###############################################
-
 ### Ingest Single Event - Product View
 POST {{host}}/api/v1/events
 Content-Type: application/json
@@ -125,7 +108,7 @@ Content-Type: application/json
       "channel": "web",
       "campaign_id": "organic",
       "user_id": "user_001",
-      "timestamp": 1733920000,
+      "timestamp": 1765324800,
       "tags": ["homepage"],
       "metadata": {"page": "/", "referrer": "google.com"}
     },
@@ -134,7 +117,7 @@ Content-Type: application/json
       "channel": "web",
       "campaign_id": "organic",
       "user_id": "user_001",
-      "timestamp": 1733920100,
+      "timestamp": 1765324800,
       "tags": ["electronics"],
       "metadata": {"product_id": "prod_100", "price": 999.99}
     },

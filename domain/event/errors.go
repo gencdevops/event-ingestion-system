@@ -13,6 +13,8 @@ const (
 	ErrCodeInvalidChannel      = "validation.invalid-channel.error"
 	ErrCodeMaxTagsExceeded     = "validation.max-tags.error"
 	ErrCodeTagTooLong          = "validation.tag-too-long.error"
+	ErrCodeInvalidGroupBy      = "validation.invalid-group-by.error"
+	ErrCodeInvalidRange        = "validation.invalid-range.error"
 )
 
 type ErrorDetail struct {

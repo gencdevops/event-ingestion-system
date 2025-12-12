@@ -12,7 +12,6 @@ import (
 	"github.com/segmentio/kafka-go"
 )
 
-// EventPublisher defines the interface for publishing events to a message broker
 type EventPublisher interface {
 	Publish(ctx context.Context, e *event.Event) error
 	PublishBatch(ctx context.Context, events []*event.Event) error
@@ -94,12 +93,7 @@ func (p *Producer) Close() error {
 	return p.writer.Close()
 }
 
-type TopicConfig struct {
-	Name       string
-	Partitions int
-}
-
-func EnsureTopicsWithConfig(cfg config.KafkaConfig, topics []TopicConfig) error {
+func EnsureTopicsWithConfig(cfg config.KafkaConfig, topics []config.TopicConfig) error {
 	conn, err := kafka.Dial("tcp", cfg.Brokers[0])
 	if err != nil {
 		return fmt.Errorf("failed to connect to kafka: %w", err)

@@ -1,6 +1,8 @@
 package controller
 
 import (
+	"log/slog"
+
 	"github.com/event-ingestion/application"
 	"github.com/event-ingestion/application/dto"
 	"github.com/event-ingestion/domain/event"
@@ -40,6 +42,8 @@ func NewMetricsController(app *fiber.App, service application.MetricsService) Me
 // @Failure      500         {object}  dto.ErrorResponse    "Internal server error"
 // @Router       /api/v1/metrics [get]
 func (ctrl *metricsController) GetMetrics(c *fiber.Ctx) error {
+	requestID := c.Locals("requestID")
+
 	query := &event.GetMetricsQuery{
 		EventName: c.Query("event_name"),
 		From:      int64(c.QueryInt("from", 0)),
@@ -47,54 +51,23 @@ func (ctrl *metricsController) GetMetrics(c *fiber.Ctx) error {
 		Channel:   c.Query("channel"),
 		GroupBy:   c.Query("group_by"),
 	}
-
-	// Validate required fields
-	if query.EventName == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(dto.ErrorResponse{
-			Error: "event_name is required",
-		})
-	}
-
-	if query.From == 0 {
-		return c.Status(fiber.StatusBadRequest).JSON(dto.ErrorResponse{
-			Error: "from timestamp is required",
-		})
-	}
-
-	if query.To == 0 {
-		return c.Status(fiber.StatusBadRequest).JSON(dto.ErrorResponse{
-			Error: "to timestamp is required",
-		})
-	}
-
-	if query.To <= query.From {
-		return c.Status(fiber.StatusBadRequest).JSON(dto.ErrorResponse{
-			Error: "to timestamp must be greater than from timestamp",
-		})
-	}
-
-	// Validate optional channel
-	if query.Channel != "" {
-		validChannels := map[string]bool{"web": true, "mobile_app": true, "api": true}
-		if !validChannels[query.Channel] {
-			return c.Status(fiber.StatusBadRequest).JSON(dto.ErrorResponse{
-				Error: "invalid channel value, must be one of: web, mobile_app, api",
+	if err := query.Validate(); err != nil {
+		if validationErr, ok := err.(*event.ValidationError); ok {
+			slog.Warn("Metrics query validation failed", "requestID", requestID, "errors", validationErr.Errors)
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+				"error":  "validation failed",
+				"errors": validationErr.Errors,
 			})
 		}
-	}
-
-	// Validate optional group_by
-	if query.GroupBy != "" {
-		validGroupBy := map[string]bool{"channel": true, "hour": true, "day": true}
-		if !validGroupBy[query.GroupBy] {
-			return c.Status(fiber.StatusBadRequest).JSON(dto.ErrorResponse{
-				Error: "invalid group_by value, must be one of: channel, hour, day",
-			})
-		}
+		slog.Warn("Metrics query validation failed", "requestID", requestID, "error", err)
+		return c.Status(fiber.StatusBadRequest).JSON(dto.ErrorResponse{
+			Error: err.Error(),
+		})
 	}
 
 	resp, err := ctrl.service.GetMetrics(c.Context(), query)
 	if err != nil {
+		slog.Error("Failed to get metrics", "requestID", requestID, "eventName", query.EventName, "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(dto.ErrorResponse{
 			Error: "failed to get metrics",
 		})

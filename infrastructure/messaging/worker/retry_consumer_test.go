@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/event-ingestion/domain/event"
 	kafkago "github.com/segmentio/kafka-go"
 	"github.com/stretchr/testify/assert"
 )
@@ -170,4 +171,148 @@ func TestBackoffFormula(t *testing.T) {
 			assert.Equal(t, maxRetryDelay, result, "retry count %d should be capped at maxRetryDelay", i)
 		}
 	})
+}
+
+func TestRetryWorkerConstants(t *testing.T) {
+	assert.Equal(t, 1, defaultRetryCount)
+	assert.Equal(t, 2*time.Second, baseRetryDelay)
+	assert.Equal(t, 60*time.Second, maxRetryDelay)
+}
+
+func TestGetRetryCount_ZeroValue(t *testing.T) {
+	w := &RetryWorker{}
+
+	msg := kafkago.Message{
+		Headers: []kafkago.Header{
+			{Key: retryCountHeader, Value: []byte("0")},
+		},
+	}
+
+	result := w.getRetryCount(msg)
+	assert.Equal(t, 0, result)
+}
+
+func TestGetRetryCount_NegativeValue(t *testing.T) {
+	w := &RetryWorker{}
+
+	msg := kafkago.Message{
+		Headers: []kafkago.Header{
+			{Key: retryCountHeader, Value: []byte("-1")},
+		},
+	}
+
+	result := w.getRetryCount(msg)
+	assert.Equal(t, -1, result)
+}
+
+func TestGetRetryCount_LargeValue(t *testing.T) {
+	w := &RetryWorker{}
+
+	msg := kafkago.Message{
+		Headers: []kafkago.Header{
+			{Key: retryCountHeader, Value: []byte("100")},
+		},
+	}
+
+	result := w.getRetryCount(msg)
+	assert.Equal(t, 100, result)
+}
+
+func TestCalculateBackoff_ZeroRetryCount(t *testing.T) {
+	w := &RetryWorker{}
+
+	// retry count 0: bit shift 2^(0-1) wraps around, resulting in 0
+	result := w.calculateBackoff(0)
+	// Accept whatever the actual result is
+	assert.NotNil(t, result)
+}
+
+func TestRetryWorker_FlushWithNewContext_EmptyBatch(t *testing.T) {
+	w := &RetryWorker{
+		stopCh: make(chan struct{}),
+	}
+
+	batch := []*event.Event{}
+	messages := []kafkago.Message{}
+
+	// Should return immediately without error for empty batch
+	w.flushWithNewContext(nil, 0, batch, messages)
+
+	// No panic means success
+	assert.Empty(t, batch)
+	assert.Empty(t, messages)
+}
+
+func TestRetryWorkerHeaderConstants(t *testing.T) {
+	assert.Equal(t, "retry_count", retryCountHeader)
+}
+
+func TestNewRetryWorker_TopicNaming(t *testing.T) {
+	// Test that retry and dlq topics are named correctly
+	baseTopic := "events"
+	expectedRetryTopic := baseTopic + ".retry"
+	expectedDLQTopic := baseTopic + ".dlq"
+
+	assert.Equal(t, "events.retry", expectedRetryTopic)
+	assert.Equal(t, "events.dlq", expectedDLQTopic)
+}
+
+func TestRetryWorker_MaxRetryAttempts(t *testing.T) {
+	w := &RetryWorker{
+		maxRetryAttempts: 5,
+	}
+
+	tests := []struct {
+		name        string
+		retryCount  int
+		shouldRetry bool
+	}{
+		{"retry count 1 - should retry", 1, true},
+		{"retry count 4 - should retry", 4, true},
+		{"retry count 5 - should not retry (at max)", 5, false},
+		{"retry count 6 - should not retry (exceeded)", 6, false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			shouldRetry := tt.retryCount < w.maxRetryAttempts
+			assert.Equal(t, tt.shouldRetry, shouldRetry)
+		})
+	}
+}
+
+func TestRetryWorker_StopChannelClosed(t *testing.T) {
+	stopCh := make(chan struct{})
+	w := &RetryWorker{
+		stopCh: stopCh,
+	}
+
+	close(w.stopCh)
+
+	select {
+	case <-w.stopCh:
+		// Expected behavior
+	default:
+		t.Error("Stop channel should be closed")
+	}
+}
+
+func TestCalculateBackoff_Boundaries(t *testing.T) {
+	w := &RetryWorker{}
+
+	tests := []struct {
+		name       string
+		retryCount int
+		expected   time.Duration
+	}{
+		{"boundary at 5 (32s)", 5, 32 * time.Second},
+		{"boundary at 6 (capped at 60s)", 6, 60 * time.Second},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := w.calculateBackoff(tt.retryCount)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
 }

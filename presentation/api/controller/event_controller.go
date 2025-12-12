@@ -1,6 +1,8 @@
 package controller
 
 import (
+	"log/slog"
+
 	"github.com/event-ingestion/application"
 	"github.com/event-ingestion/application/dto"
 	"github.com/event-ingestion/domain/event"
@@ -38,8 +40,11 @@ func NewEventController(app *fiber.App, service application.EventService) EventC
 // @Failure      500    {object}  dto.ErrorResponse         "Internal server error"
 // @Router       /api/v1/events [post]
 func (ctrl *eventController) IngestEvent(c *fiber.Ctx) error {
+	requestID := c.Locals("requestID")
+
 	var cmd event.IngestEventCommand
 	if err := c.BodyParser(&cmd); err != nil {
+		slog.Warn("Invalid request body", "requestID", requestID, "error", err)
 		return c.Status(fiber.StatusBadRequest).JSON(dto.ErrorResponse{
 			Error: "invalid request body",
 		})
@@ -48,16 +53,19 @@ func (ctrl *eventController) IngestEvent(c *fiber.Ctx) error {
 	resp, err := ctrl.service.IngestEvent(c.Context(), &cmd)
 	if err != nil {
 		if validationErr, ok := err.(*event.ValidationError); ok {
+			slog.Warn("Event validation failed", "requestID", requestID, "errors", validationErr.Errors)
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 				"error":  "validation failed",
 				"errors": validationErr.Errors,
 			})
 		}
+		slog.Error("Failed to process event", "requestID", requestID, "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(dto.ErrorResponse{
 			Error: "failed to process event",
 		})
 	}
 
+	slog.Debug("Event ingested", "requestID", requestID, "eventID", resp.EventID)
 	return c.Status(fiber.StatusAccepted).JSON(resp)
 }
 
@@ -74,39 +82,42 @@ func (ctrl *eventController) IngestEvent(c *fiber.Ctx) error {
 // @Failure      500     {object}  dto.ErrorResponse         "Internal server error"
 // @Router       /api/v1/events/bulk [post]
 func (ctrl *eventController) IngestBulk(c *fiber.Ctx) error {
+	requestID := c.Locals("requestID")
+
 	var cmd event.IngestBulkCommand
 	if err := c.BodyParser(&cmd); err != nil {
+		slog.Warn("Invalid bulk request body", "requestID", requestID, "error", err)
 		return c.Status(fiber.StatusBadRequest).JSON(dto.ErrorResponse{
 			Error: "invalid request body",
 		})
 	}
 
-	if len(cmd.Events) == 0 {
+	if err := cmd.Validate(); err != nil {
+		slog.Warn("Bulk command validation failed", "requestID", requestID, "error", err.Message)
 		return c.Status(fiber.StatusBadRequest).JSON(dto.ErrorResponse{
-			Error: "events array cannot be empty",
-		})
-	}
-
-	if len(cmd.Events) > 1000 {
-		return c.Status(fiber.StatusBadRequest).JSON(dto.ErrorResponse{
-			Error: "events array cannot exceed 1000 items",
+			Error: err.Message,
 		})
 	}
 
 	resp, err := ctrl.service.IngestBulk(c.Context(), &cmd)
 	if err != nil {
+		slog.Error("Failed to process bulk events", "requestID", requestID, "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(dto.ErrorResponse{
 			Error: "failed to process events",
 		})
 	}
 
-	// Determine status code based on results
-	statusCode := fiber.StatusAccepted
-	if resp.FailedCount > 0 && resp.SuccessCount > 0 {
-		statusCode = fiber.StatusMultiStatus // 207
-	} else if resp.FailedCount > 0 && resp.SuccessCount == 0 {
-		statusCode = fiber.StatusBadRequest
-	}
+	slog.Info("Bulk events processed", "requestID", requestID, "total", len(cmd.Events), "success", resp.SuccessCount, "failed", resp.FailedCount)
+	return c.Status(determineBulkStatusCode(resp)).JSON(resp)
+}
 
-	return c.Status(statusCode).JSON(resp)
+func determineBulkStatusCode(resp *dto.BulkEventResponse) int {
+	switch {
+	case resp.FailedCount > 0 && resp.SuccessCount > 0:
+		return fiber.StatusMultiStatus
+	case resp.FailedCount > 0:
+		return fiber.StatusBadRequest
+	default:
+		return fiber.StatusAccepted
+	}
 }

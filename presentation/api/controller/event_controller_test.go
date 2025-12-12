@@ -29,12 +29,12 @@ func TestEventController_IngestEvent(t *testing.T) {
 		app := setupEventControllerTest(mockService)
 
 		cmd := event.IngestEventCommand{
-			EventName:  "product_view",
-			Channel:    "web",
-			UserID:     "user_123",
-			Timestamp:  time.Now().Add(-1 * time.Hour).Unix(),
-			Tags:       []string{"electronics"},
-			Metadata:   map[string]any{"product_id": "prod-789"},
+			EventName: "product_view",
+			Channel:   "web",
+			UserID:    "user_123",
+			Timestamp: time.Now().Add(-1 * time.Hour).Unix(),
+			Tags:      []string{"electronics"},
+			Metadata:  map[string]any{"product_id": "prod-789"},
 		}
 
 		expectedResp := &dto.EventResponse{
@@ -134,6 +134,24 @@ func TestEventController_IngestEvent(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
 		mockService.AssertExpectations(t)
+	})
+}
+
+func TestHealthController_Health(t *testing.T) {
+	t.Run("returns 200 ok", func(t *testing.T) {
+		app := fiber.New()
+		NewHealthController(app)
+
+		req := httptest.NewRequest(http.MethodGet, "/health", nil)
+
+		resp, err := app.Test(req)
+		require.NoError(t, err)
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+		var result map[string]string
+		err = json.NewDecoder(resp.Body).Decode(&result)
+		require.NoError(t, err)
+		assert.Equal(t, "ok", result["status"])
 	})
 }
 

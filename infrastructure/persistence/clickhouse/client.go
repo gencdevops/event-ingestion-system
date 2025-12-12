@@ -3,6 +3,7 @@ package clickhouse
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/ClickHouse/clickhouse-go/v2"
@@ -16,8 +17,9 @@ type Client struct {
 }
 
 func NewClient(cfg config.ClickHouseConfig) (*Client, error) {
+	addr := fmt.Sprintf("%s:%d", cfg.Host, cfg.Port)
 	conn, err := clickhouse.Open(&clickhouse.Options{
-		Addr: []string{fmt.Sprintf("%s:%d", cfg.Host, cfg.Port)},
+		Addr: []string{addr},
 		Auth: clickhouse.Auth{
 			Database: cfg.Database,
 			Username: cfg.Username,
@@ -38,13 +40,16 @@ func NewClient(cfg config.ClickHouseConfig) (*Client, error) {
 		},
 	})
 	if err != nil {
+		slog.Error("Failed to connect to ClickHouse", "addr", addr, "error", err)
 		return nil, fmt.Errorf("failed to connect to clickhouse: %w", err)
 	}
 
 	if err := conn.Ping(context.Background()); err != nil {
+		slog.Error("Failed to ping ClickHouse", "addr", addr, "error", err)
 		return nil, fmt.Errorf("failed to ping clickhouse: %w", err)
 	}
 
+	slog.Info("Connected to ClickHouse", "addr", addr, "database", cfg.Database)
 	return &Client{conn: conn, database: cfg.Database}, nil
 }
 
@@ -102,11 +107,13 @@ func (c *Client) InitSchema(ctx context.Context) error {
 		GROUP BY event_name, channel, hour`, c.database, c.database, c.database),
 	}
 
-	for _, query := range queries {
+	for i, query := range queries {
 		if err := c.conn.Exec(ctx, query); err != nil {
+			slog.Error("Failed to execute schema query", "queryIndex", i, "error", err)
 			return fmt.Errorf("failed to execute schema query: %w", err)
 		}
 	}
 
+	slog.Info("ClickHouse schema initialized", "database", c.database, "tables", []string{"events", "events_hourly", "events_hourly_mv"})
 	return nil
 }

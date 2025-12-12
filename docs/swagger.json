@@ -1,25 +1,8 @@
 {
-    "schemes": [
-        "http",
-        "https"
-    ],
     "swagger": "2.0",
     "info": {
-        "description": "High-performance event ingestion service with Kafka and ClickHouse",
-        "title": "Event Ingestion API",
-        "termsOfService": "http://swagger.io/terms/",
-        "contact": {
-            "name": "API Support",
-            "email": "support@example.com"
-        },
-        "license": {
-            "name": "Apache 2.0",
-            "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
-        },
-        "version": "1.0"
+        "contact": {}
     },
-    "host": "localhost:8080",
-    "basePath": "/",
     "paths": {
         "/api/v1/events": {
             "post": {
@@ -47,7 +30,7 @@
                 ],
                 "responses": {
                     "202": {
-                        "description": "Event accepted for processing",
+                        "description": "Event queued for processing",
                         "schema": {
                             "$ref": "#/definitions/dto.EventResponse"
                         }
@@ -93,7 +76,7 @@
                 ],
                 "responses": {
                     "202": {
-                        "description": "All events accepted",
+                        "description": "All events queued",
                         "schema": {
                             "$ref": "#/definitions/dto.BulkEventResponse"
                         }

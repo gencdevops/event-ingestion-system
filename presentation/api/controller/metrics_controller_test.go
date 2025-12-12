@@ -63,10 +63,14 @@ func TestMetricsController_GetMetrics(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
 
-		var result dto.ErrorResponse
+		var result map[string]interface{}
 		err = json.NewDecoder(resp.Body).Decode(&result)
 		require.NoError(t, err)
-		assert.Equal(t, "event_name is required", result.Error)
+		assert.Equal(t, "validation failed", result["error"])
+		errors := result["errors"].([]interface{})
+		assert.Len(t, errors, 1)
+		firstErr := errors[0].(map[string]interface{})
+		assert.Equal(t, "event_name", firstErr["field"])
 		mockService.AssertNotCalled(t, "GetMetrics")
 	})
 
@@ -80,10 +84,13 @@ func TestMetricsController_GetMetrics(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
 
-		var result dto.ErrorResponse
+		var result map[string]interface{}
 		err = json.NewDecoder(resp.Body).Decode(&result)
 		require.NoError(t, err)
-		assert.Equal(t, "from timestamp is required", result.Error)
+		assert.Equal(t, "validation failed", result["error"])
+		errors := result["errors"].([]interface{})
+		firstErr := errors[0].(map[string]interface{})
+		assert.Equal(t, "from", firstErr["field"])
 		mockService.AssertNotCalled(t, "GetMetrics")
 	})
 
@@ -97,10 +104,13 @@ func TestMetricsController_GetMetrics(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
 
-		var result dto.ErrorResponse
+		var result map[string]interface{}
 		err = json.NewDecoder(resp.Body).Decode(&result)
 		require.NoError(t, err)
-		assert.Equal(t, "to timestamp is required", result.Error)
+		assert.Equal(t, "validation failed", result["error"])
+		errors := result["errors"].([]interface{})
+		firstErr := errors[0].(map[string]interface{})
+		assert.Equal(t, "to", firstErr["field"])
 		mockService.AssertNotCalled(t, "GetMetrics")
 	})
 
@@ -115,10 +125,10 @@ func TestMetricsController_GetMetrics(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
 
-		var result dto.ErrorResponse
+		var result map[string]interface{}
 		err = json.NewDecoder(resp.Body).Decode(&result)
 		require.NoError(t, err)
-		assert.Equal(t, "to timestamp must be greater than from timestamp", result.Error)
+		assert.Equal(t, "validation failed", result["error"])
 		mockService.AssertNotCalled(t, "GetMetrics")
 
 		// to less than from
@@ -139,10 +149,13 @@ func TestMetricsController_GetMetrics(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
 
-		var result dto.ErrorResponse
+		var result map[string]interface{}
 		err = json.NewDecoder(resp.Body).Decode(&result)
 		require.NoError(t, err)
-		assert.Equal(t, "invalid channel value, must be one of: web, mobile_app, api", result.Error)
+		assert.Equal(t, "validation failed", result["error"])
+		errors := result["errors"].([]interface{})
+		firstErr := errors[0].(map[string]interface{})
+		assert.Equal(t, "channel", firstErr["field"])
 		mockService.AssertNotCalled(t, "GetMetrics")
 	})
 
@@ -156,10 +169,13 @@ func TestMetricsController_GetMetrics(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
 
-		var result dto.ErrorResponse
+		var result map[string]interface{}
 		err = json.NewDecoder(resp.Body).Decode(&result)
 		require.NoError(t, err)
-		assert.Equal(t, "invalid group_by value, must be one of: channel, hour, day", result.Error)
+		assert.Equal(t, "validation failed", result["error"])
+		errors := result["errors"].([]interface{})
+		firstErr := errors[0].(map[string]interface{})
+		assert.Equal(t, "group_by", firstErr["field"])
 		mockService.AssertNotCalled(t, "GetMetrics")
 	})
 

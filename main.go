@@ -32,7 +32,7 @@ func main() {
 	slog.Info("Starting Event Ingestion Service", "port", cfg.Server.Port)
 
 	slog.Info("Ensuring Kafka topics exist...")
-	topics := []kafka.TopicConfig{
+	topics := []config.TopicConfig{
 		{Name: cfg.Kafka.Topic, Partitions: cfg.Kafka.Partitions},
 		{Name: cfg.Kafka.Topic + ".retry", Partitions: 10},
 		{Name: cfg.Kafka.Topic + ".dlq", Partitions: 5},
