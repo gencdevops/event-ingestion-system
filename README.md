@@ -2,6 +2,27 @@
 
 High-throughput event ingestion and metric aggregation system built with Go, Kafka, and ClickHouse.
 
+## Quick Start
+
+### Prerequisites
+
+- Go 1.22+
+- Docker & Docker Compose
+
+### Run
+
+```bash
+make run
+```
+
+This starts Kafka, ClickHouse, and the application.
+
+### Stop
+
+```bash
+make stop
+```
+
 ## Architecture
 
 ```
@@ -85,27 +106,6 @@ event-ingestion/
 
 - Average: ~2,000 events/second
 - Peak: ~20,000 events/second
-
-## Quick Start
-
-### Prerequisites
-
-- Go 1.22+
-- Docker & Docker Compose
-
-### Run
-
-```bash
-make run
-```
-
-This starts Kafka, ClickHouse, and the application.
-
-### Stop
-
-```bash
-make stop
-```
 
 ### Service URLs
 
