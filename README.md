@@ -115,6 +115,14 @@ event-ingestion/
    (raw events)                                         (metrics queries)
 ```
 
+**ClickHouse Connection:**
+
+| Property | Value |
+|----------|-------|
+| JDBC URL | `jdbc:clickhouse://localhost:8123/event_ingestion` |
+| Username | `default` |
+| Password | `clickhouse123` |
+
 ### Performance Targets
 
 - Average: ~2,000 events/second
