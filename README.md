@@ -102,6 +102,19 @@ event-ingestion/
 └── README.md
 ```
 
+### ClickHouse Schema Design
+
+```
+┌─────────────────┐      ┌──────────────────────┐      ┌─────────────────┐
+│     events      │──MV──│   events_hourly_mv   │─────▶│  events_hourly  │
+│ (ReplacingMT)   │      │  (Materialized View) │      │ (AggregatingMT) │
+└─────────────────┘      └──────────────────────┘      └─────────────────┘
+        │                                                       │
+        │                                                       │
+   INSERT here                                          SELECT from here
+   (raw events)                                         (metrics queries)
+```
+
 ### Performance Targets
 
 - Average: ~2,000 events/second
@@ -258,17 +271,3 @@ curl "http://localhost:8080/api/v1/metrics?event_name=product_view&from=$FROM&to
 | channel | Optional, one of: web, mobile_app, api |
 | tags | Optional, max 20 items, each max 100 characters |
 | metadata | Optional, free-form JSON object |
-
-### ClickHouse Schema Design
-
-```
-┌─────────────────┐      ┌──────────────────────┐      ┌─────────────────┐
-│     events      │──MV──│   events_hourly_mv   │─────▶│  events_hourly  │
-│ (ReplacingMT)   │      │  (Materialized View) │      │ (AggregatingMT) │
-└─────────────────┘      └──────────────────────┘      └─────────────────┘
-        │                                                       │
-        │                                                       │
-   INSERT here                                          SELECT from here
-   (raw events)                                         (metrics queries)
-```
-
